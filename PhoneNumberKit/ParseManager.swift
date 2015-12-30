@@ -14,7 +14,6 @@ Manager for parsing flow.
 class ParseManager {
     let metadata = Metadata.sharedInstance
     let parser = PhoneNumberParser()
-    let regex = RegularExpressions.sharedInstance
     private var multiParseArray = SynchronizedArray<PhoneNumber>()
     
     /**
@@ -27,7 +26,7 @@ class ParseManager {
         let region = region.uppercaseString
         // Extract number (2)
         var nationalNumber = rawNumber
-        let matches = try self.regex.phoneDataDetectorMatches(rawNumber)
+        let matches = try RegularExpressions.phoneDataDetectorMatches(rawNumber)
         if let phoneNumber = matches.first?.phoneNumber {
             nationalNumber = phoneNumber
         }
@@ -43,7 +42,7 @@ class ParseManager {
         }
         catch {
             do {
-                let plusRemovedNumberString = self.regex.replaceStringByRegex(leadingPlusCharsPattern, string: nationalNumber as String)
+                let plusRemovedNumberString = RegularExpressions.replaceStringByRegex(leadingPlusCharsPattern, string: nationalNumber as String)
                 countryCode = try self.parser.extractCountryCode(plusRemovedNumberString, nationalNumber: &nationalNumber, metadata: regionMetadata)
             }
             catch {
@@ -63,7 +62,7 @@ class ParseManager {
         self.parser.stripNationalPrefix(&nationalNumber, metadata: regionMetadata)
         
         // Test number against general number description for correct metadata (8)
-        if let generalNumberDesc = regionMetadata.generalDesc where (self.regex.hasValue(generalNumberDesc.nationalNumberPattern) == false || self.parser.isNumberMatchingDesc(nationalNumber, numberDesc: generalNumberDesc) == false) {
+        if let generalNumberDesc = regionMetadata.generalDesc where (RegularExpressions.hasValue(generalNumberDesc.nationalNumberPattern) == false || self.parser.isNumberMatchingDesc(nationalNumber, numberDesc: generalNumberDesc) == false) {
             throw PhoneNumberError.NotANumber
         }
         // Finalize remaining parameters and create phone number object (9)

@@ -10,22 +10,16 @@ import Foundation
 
 class RegularExpressions {
     
-    static let sharedInstance = RegularExpressions()
-    
-    private let regexQueue = dispatch_queue_create("regex", DISPATCH_QUEUE_CONCURRENT)
-    var regularExpressions = [String:NSRegularExpression]()
-    
-    var phoneDataDetector: NSDataDetector?
+    private static var regularExpressions = [String:NSRegularExpression]()
+    private static var phoneDataDetector: NSDataDetector?
 
     // MARK: Regular expression
     
-    func regexWithPattern(pattern: String) throws -> NSRegularExpression {
+    class func regexWithPattern(pattern: String) throws -> NSRegularExpression {
         
-        var regex : NSRegularExpression?
-        
-        dispatch_sync(self.regexQueue) {
-            regex = self.regularExpressions[pattern]
-        }
+        objc_sync_enter(self)
+        let regex = self.regularExpressions[pattern]
+        objc_sync_exit(self)
         
         if let regex = regex {
             return regex
@@ -34,12 +28,9 @@ class RegularExpressions {
                 var currentPattern: NSRegularExpression
                 currentPattern =  try NSRegularExpression(pattern: pattern, options:NSRegularExpressionOptions.CaseInsensitive)
                 
-                dispatch_barrier_async(self.regexQueue) {
-                    [weak self] in
-                    if let strongSelf = self {
-                        strongSelf.regularExpressions.updateValue(currentPattern, forKey: pattern)
-                    }
-                }
+                objc_sync_enter(self)
+                self.regularExpressions.updateValue(currentPattern, forKey: pattern)
+                objc_sync_exit(self)
                 
                 return currentPattern
             }
@@ -49,7 +40,7 @@ class RegularExpressions {
         }
     }
     
-    func regexMatches(pattern: String, string: String) throws -> [NSTextCheckingResult] {
+    class func regexMatches(pattern: String, string: String) throws -> [NSTextCheckingResult] {
         do {
             let internalString = string
             let currentPattern =  try regexWithPattern(pattern)
@@ -64,7 +55,7 @@ class RegularExpressions {
         }
     }
     
-    func phoneDataDetectorMatches(string: String) throws -> [NSTextCheckingResult] {
+    class func phoneDataDetectorMatches(string: String) throws -> [NSTextCheckingResult] {
         var dataDetector: NSDataDetector
         if let phoneDataDetector = phoneDataDetector {
             dataDetector = phoneDataDetector
@@ -97,7 +88,7 @@ class RegularExpressions {
     
     // MARK: Match helpers
     
-    func matchesAtStart(pattern: String, string: String) -> Bool {
+    class func matchesAtStart(pattern: String, string: String) -> Bool {
         do {
             let matches = try regexMatches(pattern, string: string)
             for match in matches {
@@ -111,7 +102,7 @@ class RegularExpressions {
         return false
     }
     
-    func stringPositionByRegex(pattern: String, string: String) -> Int {
+    class func stringPositionByRegex(pattern: String, string: String) -> Int {
         do {
             let matches = try regexMatches(pattern, string: string)
             if let match = matches.first {
@@ -123,7 +114,7 @@ class RegularExpressions {
         }
     }
     
-    func matchesExist(pattern: String?, string: String) -> Bool {
+    class func matchesExist(pattern: String?, string: String) -> Bool {
         guard let pattern = pattern else {
             return false
         }
@@ -137,7 +128,7 @@ class RegularExpressions {
     }
 
     
-    func matchesEntirely(pattern: String?, string: String) -> Bool {
+    class func matchesEntirely(pattern: String?, string: String) -> Bool {
         guard let pattern = pattern else {
             return false
         }
@@ -160,7 +151,7 @@ class RegularExpressions {
     
     // MARK: String and replace
     
-    func replaceStringByRegex(pattern: String, string: String) -> String {
+    class func replaceStringByRegex(pattern: String, string: String) -> String {
         do {
             var replacementResult = string
             let regex =  try regexWithPattern(pattern)
@@ -185,7 +176,7 @@ class RegularExpressions {
         }
     }
     
-    func replaceStringByRegex(pattern: String, string: String, template: String) -> String {
+    class func replaceStringByRegex(pattern: String, string: String, template: String) -> String {
         do {
             var replacementResult = string
             let regex =  try regexWithPattern(pattern)
@@ -210,7 +201,7 @@ class RegularExpressions {
         }
     }
     
-    func replaceFirstStringByRegex(pattern: String, string: String, templateString: String) -> String {
+    class func replaceFirstStringByRegex(pattern: String, string: String, templateString: String) -> String {
         do {
             // NSRegularExpression accepts Swift strings but works with NSString under the hood. Safer to bridge to NSString for taking range.
             var nsString = string as NSString
@@ -226,7 +217,7 @@ class RegularExpressions {
         }
     }
     
-    func stringByReplacingOccurrences(string: String, map: [String:String], removeNonMatches: Bool) -> String {
+    class func stringByReplacingOccurrences(string: String, map: [String:String], removeNonMatches: Bool) -> String {
         let targetString = NSMutableString ()
         let copiedString: NSString = string
         for var i = 0; i < string.characters.count; i++ {
@@ -244,7 +235,7 @@ class RegularExpressions {
     
     // MARK: Validations
     
-    func hasValue(value: NSString?) -> Bool {
+    class func hasValue(value: NSString?) -> Bool {
         guard let value = value else {
             return false
         }
@@ -256,7 +247,7 @@ class RegularExpressions {
         return true
     }
     
-    func testStringLengthAgainstPattern(pattern: String, string: String) -> Bool {
+    class func testStringLengthAgainstPattern(pattern: String, string: String) -> Bool {
         if (matchesEntirely(pattern, string: string)) {
             return true
         }

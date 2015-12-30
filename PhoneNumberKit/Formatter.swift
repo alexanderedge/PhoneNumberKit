@@ -10,9 +10,6 @@ import Foundation
 
 class Formatter {
     
-    // MARK: Formatting functions
-    let regex = RegularExpressions.sharedInstance
-    
     /**
      Formats phone numbers for display
      - Parameter phoneNumber: Phone number object.
@@ -58,15 +55,15 @@ class Formatter {
         var selectedFormat: MetadataPhoneNumberFormat?
         for format in formats {
             if let leadingDigitPattern = format.leadingDigitsPatterns?.last {
-                if (regex.stringPositionByRegex(leadingDigitPattern, string: String(nationalNumber)) == 0) {
-                    if (regex.matchesEntirely(format.pattern, string: String(nationalNumber))) {
+                if (RegularExpressions.stringPositionByRegex(leadingDigitPattern, string: String(nationalNumber)) == 0) {
+                    if (RegularExpressions.matchesEntirely(format.pattern, string: String(nationalNumber))) {
                         selectedFormat = format
                         break;
                     }
                 }
             }
             else {
-                if (regex.matchesEntirely(format.pattern, string: String(nationalNumber))) {
+                if (RegularExpressions.matchesEntirely(format.pattern, string: String(nationalNumber))) {
                     selectedFormat = format
                     break;
                 }
@@ -79,15 +76,15 @@ class Formatter {
             var formattedNationalNumber = String()
             var prefixFormattingRule = String()
             if let nationalPrefixFormattingRule = formatPattern.nationalPrefixFormattingRule, let nationalPrefix = regionMetadata.nationalPrefix {
-                prefixFormattingRule = regex.replaceStringByRegex(npPattern, string: nationalPrefixFormattingRule, template: nationalPrefix)
-                prefixFormattingRule = regex.replaceStringByRegex(fgPattern, string: prefixFormattingRule, template:"\\$1")
+                prefixFormattingRule = RegularExpressions.replaceStringByRegex(npPattern, string: nationalPrefixFormattingRule, template: nationalPrefix)
+                prefixFormattingRule = RegularExpressions.replaceStringByRegex(fgPattern, string: prefixFormattingRule, template:"\\$1")
             }
-            if formatType == PhoneNumberFormat.National && regex.hasValue(prefixFormattingRule){
-                let replacePattern = regex.replaceFirstStringByRegex(firstGroupPattern, string: numberFormatRule, templateString: prefixFormattingRule)
-                formattedNationalNumber = self.regex.replaceStringByRegex(pattern, string: nationalNumber, template: replacePattern)
+            if formatType == PhoneNumberFormat.National && RegularExpressions.hasValue(prefixFormattingRule){
+                let replacePattern = RegularExpressions.replaceFirstStringByRegex(firstGroupPattern, string: numberFormatRule, templateString: prefixFormattingRule)
+                formattedNationalNumber = RegularExpressions.replaceStringByRegex(pattern, string: nationalNumber, template: replacePattern)
             }
             else {
-                formattedNationalNumber = self.regex.replaceStringByRegex(pattern, string: nationalNumber, template: numberFormatRule)
+                formattedNationalNumber = RegularExpressions.replaceStringByRegex(pattern, string: nationalNumber, template: numberFormatRule)
             }
             return formattedNationalNumber
         }
