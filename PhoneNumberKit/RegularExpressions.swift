@@ -12,7 +12,12 @@ class RegularExpressions {
     
     private static var regularExpressions = [String:NSRegularExpression]()
     private static var phoneDataDetector: NSDataDetector?
-
+    private static var spaceCharacterSet: NSCharacterSet = {
+        let characterSet = NSMutableCharacterSet(charactersInString: "\u{00a0}")
+        characterSet.formUnionWithCharacterSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+        return characterSet
+    }()
+    
     // MARK: Regular expression
     
     class func regexWithPattern(pattern: String) throws -> NSRegularExpression {
@@ -25,7 +30,7 @@ class RegularExpressions {
             return regex
         } else {
             do {
-                var currentPattern: NSRegularExpression
+                let currentPattern: NSRegularExpression
                 currentPattern =  try NSRegularExpression(pattern: pattern, options:NSRegularExpressionOptions.CaseInsensitive)
                 
                 objc_sync_enter(self)
@@ -56,9 +61,9 @@ class RegularExpressions {
     }
     
     class func phoneDataDetectorMatches(string: String) throws -> [NSTextCheckingResult] {
-        var dataDetector: NSDataDetector
-        if let phoneDataDetector = phoneDataDetector {
-            dataDetector = phoneDataDetector
+        let dataDetector: NSDataDetector
+        if let detector = phoneDataDetector {
+            dataDetector = detector
         }
         else {
             do {
@@ -218,33 +223,33 @@ class RegularExpressions {
     }
     
     class func stringByReplacingOccurrences(string: String, map: [String:String], removeNonMatches: Bool) -> String {
-        let targetString = NSMutableString ()
-        let copiedString: NSString = string
+        var targetString = String()
+        let copiedString = string
         for var i = 0; i < string.characters.count; i++ {
-            var oneChar = copiedString.characterAtIndex(i)
-            let keyString = NSString(characters: &oneChar, length: 1) as String
+            let oneChar = copiedString[copiedString.startIndex.advancedBy(i)]
+            let keyString = String(oneChar)
             if let mappedValue = map[keyString.uppercaseString] {
-                targetString.appendString(mappedValue)
+                targetString.appendContentsOf(mappedValue)
             }
             else if removeNonMatches == false {
-                targetString.appendString(keyString as String)
+                targetString.appendContentsOf(keyString as String)
             }
         }
-        return targetString as String
+        return targetString
     }
     
     // MARK: Validations
     
     class func hasValue(value: NSString?) -> Bool {
-        guard let value = value else {
+        if let valueString = value {
+            if valueString.stringByTrimmingCharactersInSet(spaceCharacterSet).characters.count == 0 {
+                return false
+            }
+            return true
+        }
+        else {
             return false
         }
-        let spaceCharSet = NSMutableCharacterSet(charactersInString: nonBreakingSpace)
-        spaceCharSet.formUnionWithCharacterSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
-        if value.stringByTrimmingCharactersInSet(spaceCharSet).characters.count == 0 {
-            return false
-        }
-        return true
     }
     
     class func testStringLengthAgainstPattern(pattern: String, string: String) -> Bool {
